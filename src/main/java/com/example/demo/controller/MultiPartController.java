@@ -21,6 +21,10 @@ public class MultiPartController {
 	
 	@Autowired
 	MultiPartService multiPartService;
+
+/*
+This Api is for uploading file using multipart
+*/
 	
 	@RequestMapping(value="api/v1/saveFile", method = RequestMethod.POST)
 	public Map<String, Object> saveFile(HttpServletRequest request,MultipartFile file){
