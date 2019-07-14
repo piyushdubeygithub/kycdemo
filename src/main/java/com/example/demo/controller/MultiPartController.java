@@ -33,6 +33,10 @@ This Api is for uploading file using multipart
 		return result;
 	}
 	
+/*
+This Api is for inserting a user
+*/
+
 	@RequestMapping(value="api/v1/insertUser", method = RequestMethod.POST)
 	public Map<String, Object> insertUser(HttpServletRequest request, @RequestBody Document document){
 		Map<String, Object> result = new HashMap<>();
