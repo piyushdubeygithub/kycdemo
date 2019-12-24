@@ -1,0 +1,51 @@
+package in.careerpower.timeline.services;
+
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.cloudfront.AmazonCloudFrontClient;
+import com.amazonaws.services.cloudfront.model.CreateInvalidationRequest;
+import com.amazonaws.services.cloudfront.model.CreateInvalidationResult;
+import com.amazonaws.services.cloudfront.model.InvalidationBatch;
+import com.amazonaws.services.cloudfront.model.Paths;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+@Service
+public class CloudFrontService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CloudFrontService.class);
+
+    @Value("${timeline.invalidation.awsId}")
+    private String invalidationAwsId;
+
+    @Value("${timeline.invalidation.awsKey}")
+    private String invalidationAwsKey;
+
+    @Value("${timeline.invalidation.DisId}")
+    private String invalidationDistId;
+
+    public  AWSCredentials getAWSCredentialsForCFInvalidation() {
+        return new BasicAWSCredentials(invalidationAwsId, invalidationAwsKey);
+    }
+
+    @SuppressWarnings("deprecation")
+    @Async
+    public void clearTimelineAWSCloudFrontCache(int timelineId, String pathUrl) {
+        AmazonCloudFrontClient client = new AmazonCloudFrontClient(getAWSCredentialsForCFInvalidation());
+
+        Paths invalidation_paths = new Paths().withItems(pathUrl).withQuantity(1);
+        String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+        InvalidationBatch invalidation_batch = new InvalidationBatch(invalidation_paths,timelineId+ "timeline_cache_invalidate"+timeStamp);
+
+        CreateInvalidationRequest invalidation = new CreateInvalidationRequest(invalidationDistId, invalidation_batch);
+
+        CreateInvalidationResult ret = client.createInvalidation(invalidation);
+
+        LOGGER.info("Invalidation result for calling v3 invalidation after package editing : " + ret.toString());
+    }
+
+}
