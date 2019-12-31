@@ -1,0 +1,363 @@
+package in.careerpower.user.services;
+
+import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import org.apache.http.HttpHeaders;
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.utils.URLEncodedUtils;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.util.EntityUtils;
+import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+
+/**
+ * @Author - Vipul
+ */
+@Service
+public class HttpService {
+
+	@Autowired
+	RequestConfig requestConfig;
+	
+	
+	@Value("${discourse.request.idle.milisec}")
+    int timeoutMiliSec;
+	
+	@Value("${doubt.request.idle.milisec}")
+    int doubtTimeoutMiliSec;
+	
+	
+	@Value("${social.request.idle.milisec}")
+    int socialTimeoutMiliSec;
+
+	private static final Logger logger = LoggerFactory.getLogger(HttpService.class);
+
+	/**
+	 * @param url
+	 * @param requestBodyObject
+	 * @param headers
+	 * @return
+	 * @throws IOException
+	 */
+	public String makeBodyPostRequest(String url, Object requestBodyObject, Map<String, String> headers)
+			throws IOException {
+		
+		ObjectMapper objectMapper = new ObjectMapper();
+
+		CloseableHttpClient httpClient = HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build();
+
+		HttpPost request = new HttpPost(url);
+
+		String responseString = null;
+
+		StringEntity stringEntity = new StringEntity(objectMapper.writeValueAsString(requestBodyObject));
+
+		request.setEntity(stringEntity);
+
+		if (headers != null && !headers.isEmpty()) {
+			headers.keySet().forEach(key -> request.setHeader(key, headers.get(key)));
+		}
+
+		request.setHeader(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.getMimeType());
+
+		try {
+
+			HttpResponse response = httpClient.execute(request);
+
+			responseString = EntityUtils.toString(response.getEntity());
+
+			logger.debug("Response received from hitting url :{} is : {}", url, responseString);
+
+		} catch (Exception e) {
+
+			logger.debug("Exception in make body post request : {}", e.getMessage());
+
+		}
+
+		return responseString;
+	}
+	
+//	Below two methods mainly for discourse in which we have timeoutMiliSec which we can set to zero at anytime to stop this service
+
+	public String makeParamPostRequestWithHeaders(String url, Map<String, String> paramMap, Map<String, String> headers)
+			throws IOException {
+		String responseString = null;
+		if (timeoutMiliSec > 0) {
+			RequestConfig config = RequestConfig.custom()
+					.setConnectTimeout(timeoutMiliSec)
+					.setConnectionRequestTimeout(timeoutMiliSec)
+					.setSocketTimeout(timeoutMiliSec).build();
+			CloseableHttpClient httpClient = 
+					HttpClientBuilder.create().setDefaultRequestConfig(config).build();
+			//		HttpGet request = new HttpGet("http://localhost:8080/service"); // GET Request
+			//		response = client.execute(request);
+			//		CloseableHttpClient httpClient = .setDefaultRequestConfig(requestConfig).build();
+
+
+			List<NameValuePair> params = new LinkedList<>();
+
+			if (paramMap != null && !paramMap.isEmpty()) {
+				paramMap.forEach((key, value) -> params.add(new BasicNameValuePair(key, value)));
+			}
+
+//			String paramString = URLEncodedUtils.format(params, "utf-8");
+//
+//			url += "?" + paramString;
+
+			HttpPost request = new HttpPost(url);
+			JSONObject object = new JSONObject(paramMap);
+			
+			StringEntity stringEntity = new StringEntity(object.toString());
+			stringEntity.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+			request.getRequestLine();
+	        request.setEntity(stringEntity);
+
+			headers.put("content-type", "application/json");
+
+			if (headers != null && !headers.isEmpty()) {
+				headers.forEach(request::setHeader);
+			}
+
+			try {
+
+				HttpResponse response = httpClient.execute(request);
+
+				responseString = EntityUtils.toString(response.getEntity());
+
+				logger.debug("Response received from hitting url :{} is : {}", url, responseString);
+
+			} catch (Exception e) {
+
+				logger.debug("Exception in make body post request : {}", e.getMessage());
+
+			}
+		}
+
+		return responseString;
+	}
+	
+	public String makeParamPostRequestWithHeadersForSocial(String url, Map<String, String> paramMap, Map<String, String> headers)
+			throws IOException {
+		String responseString = null;
+		if (socialTimeoutMiliSec > 0) {
+			RequestConfig config = RequestConfig.custom()
+					.setConnectTimeout(socialTimeoutMiliSec)
+					.setConnectionRequestTimeout(socialTimeoutMiliSec)
+					.setSocketTimeout(socialTimeoutMiliSec).build();
+			CloseableHttpClient httpClient = 
+					HttpClientBuilder.create().setDefaultRequestConfig(config).build();
+			//		HttpGet request = new HttpGet("http://localhost:8080/service"); // GET Request
+			//		response = client.execute(request);
+			//		CloseableHttpClient httpClient = .setDefaultRequestConfig(requestConfig).build();
+
+
+			List<NameValuePair> params = new LinkedList<>();
+
+			if (paramMap != null && !paramMap.isEmpty()) {
+				paramMap.forEach((key, value) -> params.add(new BasicNameValuePair(key, value)));
+			}
+
+//			String paramString = URLEncodedUtils.format(params, "utf-8");
+//
+//			url += "?" + paramString;
+
+			HttpPost request = new HttpPost(url);
+			JSONObject object = new JSONObject(paramMap);
+			
+			StringEntity stringEntity = new StringEntity(object.toString());
+			stringEntity.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+			request.getRequestLine();
+	        request.setEntity(stringEntity);
+
+			headers.put("content-type", "application/json");
+
+			if (headers != null && !headers.isEmpty()) {
+				headers.forEach(request::setHeader);
+			}
+
+			try {
+
+				HttpResponse response = httpClient.execute(request);
+
+				responseString = EntityUtils.toString(response.getEntity());
+
+				logger.debug("Response received from hitting url :{} is : {}", url, responseString);
+
+			} catch (Exception e) {
+
+				logger.debug("Exception in make body post request : {}", e.getMessage());
+
+			}
+		}
+
+		return responseString;
+	}
+
+	/**
+	 * @param url
+	 * @param paramMap
+	 * @return
+	 * @throws IOException
+	 */
+	public String makeGetRequest(String url, Map<String, String> paramMap, Map<String, String> headers)
+			throws IOException {
+		String responseString = null;
+		if (timeoutMiliSec > 0) {
+
+			RequestConfig config = RequestConfig.custom()
+					.setConnectTimeout(timeoutMiliSec)
+					.setConnectionRequestTimeout(timeoutMiliSec)
+					.setSocketTimeout(timeoutMiliSec).build();
+			CloseableHttpClient httpClient = HttpClientBuilder.create().setDefaultRequestConfig(config).build();
+
+			List<NameValuePair> params = new LinkedList<>();
+
+			if (paramMap != null && !paramMap.isEmpty()) {
+				paramMap.keySet().forEach(key -> params.add(new BasicNameValuePair(key, paramMap.get(key))));
+			}
+
+			String paramString = URLEncodedUtils.format(params, "utf-8");
+
+			url += "?" + paramString;
+
+			HttpGet request = new HttpGet(url);
+
+			if (headers != null && !headers.isEmpty()) {
+				headers.keySet().forEach(key -> request.setHeader(key, headers.get(key)));
+			}
+
+			try {
+
+				HttpResponse response = httpClient.execute(request);
+
+				responseString = EntityUtils.toString(response.getEntity());
+
+				logger.debug("Response received from hitting url :{} is : {}", url, responseString);
+
+			} catch (Exception e) {
+
+				logger.debug("Exception in make body post request : {}", e.getMessage());
+
+			}
+		}
+		return responseString;
+	}
+	
+	
+	public String makeParamPostRequestForDoubtWithHeaders(String url, Map<String, String> paramMap, Map<String, String> headers)
+			throws IOException {
+		String responseString = null;
+		if (doubtTimeoutMiliSec > 0) {
+			RequestConfig config = RequestConfig.custom()
+					.setConnectTimeout(doubtTimeoutMiliSec)
+					.setConnectionRequestTimeout(doubtTimeoutMiliSec)
+					.setSocketTimeout(doubtTimeoutMiliSec).build();
+			CloseableHttpClient httpClient = 
+					HttpClientBuilder.create().setDefaultRequestConfig(config).build();
+			//		HttpGet request = new HttpGet("http://localhost:8080/service"); // GET Request
+			//		response = client.execute(request);
+			//		CloseableHttpClient httpClient = .setDefaultRequestConfig(requestConfig).build();
+
+
+			List<NameValuePair> params = new LinkedList<>();
+
+			if (paramMap != null && !paramMap.isEmpty()) {
+				paramMap.forEach((key, value) -> params.add(new BasicNameValuePair(key, value)));
+			}
+
+			String paramString = URLEncodedUtils.format(params, "utf-8");
+
+			url += "?" + paramString;
+
+			HttpPost request = new HttpPost(url);
+
+
+			if (headers != null && !headers.isEmpty()) {
+				headers.forEach(request::setHeader);
+			}
+
+			try {
+
+				HttpResponse response = httpClient.execute(request);
+
+				responseString = EntityUtils.toString(response.getEntity());
+
+				logger.debug("Response received from hitting url :{} is : {}", url, responseString);
+
+			} catch (Exception e) {
+
+				logger.debug("Exception in make body post request : {}", e.getMessage());
+
+			}
+		}
+
+		return responseString;
+	}
+
+	/**
+	 * @param url
+	 * @param paramMap
+	 * @return
+	 * @throws IOException
+	 */
+	public String makeGetRequestForDoubt(String url, Map<String, String> paramMap, Map<String, String> headers)
+			throws IOException {
+		String responseString = null;
+		if (doubtTimeoutMiliSec > 0) {
+
+			RequestConfig config = RequestConfig.custom()
+					.setConnectTimeout(doubtTimeoutMiliSec)
+					.setConnectionRequestTimeout(doubtTimeoutMiliSec)
+					.setSocketTimeout(doubtTimeoutMiliSec).build();
+			CloseableHttpClient httpClient = HttpClientBuilder.create().setDefaultRequestConfig(config).build();
+
+			List<NameValuePair> params = new LinkedList<>();
+
+			if (paramMap != null && !paramMap.isEmpty()) {
+				paramMap.keySet().forEach(key -> params.add(new BasicNameValuePair(key, paramMap.get(key))));
+			}
+
+			String paramString = URLEncodedUtils.format(params, "utf-8");
+
+			url += "?" + paramString;
+
+			HttpGet request = new HttpGet(url);
+
+			if (headers != null && !headers.isEmpty()) {
+				headers.keySet().forEach(key -> request.setHeader(key, headers.get(key)));
+			}
+
+			try {
+
+				HttpResponse response = httpClient.execute(request);
+
+				responseString = EntityUtils.toString(response.getEntity());
+
+				logger.debug("Response received from hitting url :{} is : {}", url, responseString);
+
+			} catch (Exception e) {
+
+				logger.debug("Exception in make body post request : {}", e.getMessage());
+
+			}
+		}
+		return responseString;
+	}
+}
